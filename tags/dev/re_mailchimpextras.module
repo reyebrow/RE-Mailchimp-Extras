@@ -65,6 +65,28 @@ function _re_mailchimpextras_mailchimp_log($api, $operation, $first_name, $last_
 
 
 /**
+ * A simple-minded utility function that, when given an array of two-item arrays,
+ * creates a csv-formatted string. Note that although this function will correctly
+ * quote already quoted strings (i.e. "cat" becomes ""cat"") the companion function
+ * will NOT correctly return ""cat"" to "cat", but will rather return cat.
+ *
+ * This is NOT a general purpose array to csv function!
+ *
+ * @param array $array The incoming array to be converted to csv.
+ * @return string The csv formatted string.
+ * @see re_mailchimpextras_csv_to_array()
+ */
+function re_mailchimpextras_array_to_csv($array) {
+  // Build an output pattern:
+  $row_pattern = '"%s","%s"';
+  foreach ($array as $field => $value) {
+    $rows[] = sprintf($row_pattern, $field, $value);
+  }
+  return implode(chr(10), $rows);
+} // re_mailchimpextras_array_to_csv()
+
+
+/**
  * Provides admin screen where preferences can be set.
  */
 function re_mailchimpextras_admin_settings() {
@@ -195,6 +217,41 @@ function re_mailchimpextras_admin_settings() {
     );
   return system_settings_form($form);
 } // re_mailchimpextras_admin_settings()
+
+
+/**
+ * Another simple-minded utility function used for converting a .csv string back
+ * to an array.
+ *
+ * Note that this function will NOT correctly parse fields whose contents are
+ * actually quoted. For example, in a csv file the value "cat" will be stored
+ * as ""cat"", but this function will remove ALL leading and trailing quotation
+ * marks!
+ *
+ * @param string $csv The string to be parsed.
+ * @return array $rows The processed array.
+ * @see re_mailchimpextras_array_to_csv()
+ */
+function re_mailchimpextras_csv_to_array($csv) {
+  // Convert the string to an array of strings:
+  $base_array = explode(chr(10), $csv);
+  // Loop through the resulting array:
+  foreach ($base_array as $row) {
+    // Create a new array for this row:
+    $new_row = array();
+    // Explode the current string as a temp array:
+    $temp_row = explode(',', trim($row));
+    // Then loop through the items in that array, strip off the leading and trailing
+    // quotes and add them to the new row array:
+    foreach ($temp_row as $field) {
+      $new_row[] = trim($field, '"');
+    }
+    // Add the new row to the collection:
+    $rows[] = $new_row;
+  }
+  // Return the total:
+  return $rows;
+} // re_mailchimpextras_csv_to_array()
 
 
 /**
