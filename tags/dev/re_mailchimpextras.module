@@ -65,6 +65,50 @@ function _re_mailchimpextras_mailchimp_log($api, $operation, $first_name, $last_
 
 
 /**
+ * This function is a helper function, used on the admin settings page, for
+ * displaying the account information of beloning to the API key user.
+ *
+ *
+ * @param string $api_key An active Mailchimp API key
+ * @return string A message including the account username, user_id, plan type and contact details of the account holder
+ *
+ */
+function re_mailchimpextras_account_details($api_key) {
+  // We need to include the library:
+  require_once 'MCAPI.class.php';
+  // Now, build the $api object:
+  $api = new MCAPI($api_key);
+  // Retrieve the account information:
+  $result = re_mailchimpextras_get_account_details($api_key);
+  // Maybe we didn't get anything back:
+  if (empty($result) || !is_array($result)) {
+    // Just go straight to preparing the output:
+    $message_pattern = '<p>%s</p>';
+    $message = sprintf($message_pattern, t('No account information was returned! Please ensure you are using the correct API key.'));
+  }
+  // But if we did:
+  else {
+    // Create a list
+    $list_item_pattern = '%s: <strong>%s</strong>';
+    // Get the account details
+    foreach($result['contact'] as $key => $value) {
+      $items[] = sprintf($list_item_pattern, t($key), $value); 
+    }
+    $contact_details = theme('item_list', $items);
+    // Get all other details
+    $list_items = array(
+      sprintf($list_item_pattern, t('User ID'), $result['user_id']),
+      sprintf($list_item_pattern, t('Username'), $result['username']),
+      sprintf($list_item_pattern, t('Plan type'), $result['plan_type']),
+      t('Contact Details') . $contact_details,
+    );
+    $message = theme('item_list', $list_items);
+  }
+  return $message;
+} // re_mailchimpextras_account_details()
+
+
+/**
  * A simple-minded utility function that, when given an array of two-item arrays,
  * creates a csv-formatted string. Note that although this function will correctly
  * quote already quoted strings (i.e. "cat" becomes ""cat"") the companion function
@@ -127,6 +171,22 @@ function re_mailchimpextras_admin_settings() {
       $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_available_list_ids'] = array(
         '#title' => t('Available lists'),
         '#value' => re_mailchimpextras_lists($api_key),
+      );
+    }
+
+  // Mailchimp account details:
+  $form['re_mailchimpextras_mailchimp_account'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Mailchimp account details'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE, // Expand the fieldset if there are still un-set required fields...
+  );
+
+    // If the API key is set, we'll show the available lists for that key:
+    if ($api_key != '') {
+      $form['re_mailchimpextras_mailchimp_account']['re_mailchimpextras_account_details'] = array(
+        '#title' => t('Account Details'),
+        '#value' => re_mailchimpextras_account_details($api_key),
       );
     }
 
@@ -263,6 +323,29 @@ function re_mailchimpextras_form_alter(&$form, &$form_state, $form_id) {
     $form['#submit'][] = 're_mailchimpextras_webform_submit';
   }
 } // re_mailchimpextras_form_alter()
+
+
+/**
+ * This function is an API function.
+ * It will return the value of a field from the getAccountDetails API call.
+ *
+ *
+ * @param string $api_key An active Mailchimp API key
+ * @param string $field The name of the field to return from the API 
+ * @see http://apidocs.mailchimp.com/rtfm/getaccountdetails.func.php
+ * @return string A table including the account username, user_id, plan type and contact details of the account holder
+ *
+ */
+function re_mailchimpextras_get_account_details($api_key, $field = NULL) {
+  // We need to include the library:
+  require_once 'MCAPI.class.php';
+  // Now, build the $api object:
+  $api = new MCAPI($api_key);
+  // Get the account details
+  $result = $api->getAccountDetails();
+  // If a field is request return that specific field, otherwise return all account details
+  return ($field) ? $result[$field] : $result;
+}
 
 
 /**
