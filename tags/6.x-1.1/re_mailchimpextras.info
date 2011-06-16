@@ -1,8 +1,0 @@
-;$Id$
-name = 'RE Mailchimp Extras'
-description = 'Enables posting information from webforms to an external Mailchimp account.'
-package = 'Raised Eyebrow Custom Modules'
-dependencies[] = webform
-core = 6.x
-php = 5.2
-version = 6.x-1.1
