@@ -1,0 +1,38 @@
+<?php
+
+
+/**
+ * @file
+ * Provides code to be run at module installation.
+ */
+ 
+
+/**
+ * 
+ */
+function re_mailchimpextras_requirements($phase) {
+ 
+  if ($libraries_path = realpath('./sites/all/libraries')) {
+    $mailchimp_class_path = $libraries_path .'/mailchimp-api-class/MCAPI.class.php';
+  } 
+  
+  $t = get_t();
+  switch ($phase) {
+    case 'install':
+      $requirements['mailchimp_api'] = array(
+        'title' => $t('Mailchimp API Files'),
+      );
+      if (!file_exists($mailchimp_class_path)) {
+        $requirements['mailchimp_api']['value'] = $t('The required libaries could not be found. RE Mailchimp Extras was not installed.');
+        $requirements['mailchimp_api']['description'] = $t('The RE Mailchimp Extras module requires the !mailchimp-api-link to reside at <code>sites/all/libraries/mailchimp-api-class/MCAPI.class.php</code>.', array('!mailchimp-api-link' => l(t('Mailchimp PHP class'), 'http://apidocs.mailchimp.com/api/downloads/#php')));
+        $requirements['mailchimp_api']['severity'] = REQUIREMENT_ERROR;
+      }
+      else {
+        $requirements['mailchimp_api']['value'] = $t('The required libraries were found and RE Mailchimp Extras was installed.');
+        $requirements['mailchimp_api']['description'] = NULL;
+        $requirements['mailchimp_api']['severity'] = REQUIREMENT_OK;
+      }
+      break;
+  }
+  return $requirements;
+} // re_mailchimpextras_requirements()

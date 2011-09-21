@@ -76,7 +76,8 @@ function re_mailchimpextras_mailchimp_log($api, $operation, $first_name, $last_n
  */
 function re_mailchimpextras_account_details($api_key) {
   // We need to include the library:
-  require_once 'MCAPI.class.php';
+  $mailchimp_class_path = realpath('./sites/all/libraries') .'/mailchimp-api-class/MCAPI.class.php'; 
+  require_once $mailchimp_class_path;
   // Now, build the $api object:
   $api = new MCAPI($api_key);
   // Retrieve the account information:
@@ -349,7 +350,8 @@ function re_mailchimpextras_form_alter(&$form, &$form_state, $form_id) {
  */
 function re_mailchimpextras_get_account_details($api_key, $field = NULL) {
   // We need to include the library:
-  require_once 'MCAPI.class.php';
+  $mailchimp_class_path = realpath('./sites/all/libraries') .'/mailchimp-api-class/MCAPI.class.php'; 
+  require_once $mailchimp_class_path;
   // Now, build the $api object:
   $api = new MCAPI($api_key);
   // Get the account details
@@ -394,7 +396,8 @@ function re_mailchimpextras_init() {
  */
 function re_mailchimpextras_listSubscribe($api_key, $list_id, $email_address, $merge_vars, $email_type = 'HTML', $double_optin = NULL, $update_existing = NULL, $replace_interestes = NULL, $send_welcome = NULL) {
   // Get the Mailchimp library:
-  require_once 'MCAPI.class.php';
+  $mailchimp_class_path = realpath('./sites/all/libraries') .'/mailchimp-api-class/MCAPI.class.php'; 
+  require_once $mailchimp_class_path;
   // Instantiate the mailchimp object:
   $api = new MCAPI($api_key);
   // Make the request:
@@ -421,7 +424,8 @@ function re_mailchimpextras_listSubscribe($api_key, $list_id, $email_address, $m
  */
 function re_mailchimpextras_lists($api_key) {
   // We need to include the library:
-  require_once 'MCAPI.class.php';
+  $mailchimp_class_path = realpath('./sites/all/libraries') .'/mailchimp-api-class/MCAPI.class.php'; 
+  require_once $mailchimp_class_path;
   // Now, build the $api object:
   $api = new MCAPI($api_key);
   // Retrieve the lists:
