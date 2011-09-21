@@ -23,6 +23,7 @@ define('RE_MCE_MAILCHIMP_WATCHDOG_ERROR_MESSAGE', 'The Mailchimp API returned an
 define('RE_MCE_MAILCHIMP_DSM_ERROR_MESSAGE', 'We\'re sorry, but we could not automatically subscribe you to our newsletter.');
 define('RE_MCE_MAILCHIMP_WATCHDOG_SUCCESS_MESSAGE', 'A user has been successfully added to the Mailchimp Email Newsletter. Subscriber information: &lt;@email&gt; @first_name @last_name');
 define('RE_MCE_MAILCHIMP_DSM_SUCCESS_MESSAGE', 'You have been subscribed to our email newsletter. Please check your email and follow the instructions in the confirmation message.');
+define('RE_MCE_MAILCHIMP_LISTS_LOOKUP_PATH', 'admin/settings/re_mce/lists');
 
 
 /**
@@ -154,7 +155,7 @@ function re_mailchimpextras_admin_settings() {
       '#type' => 'textfield',
       '#title' => t('API key for the Mailchimp account collecting form data'),
       '#description' => t('Remote interaction with the Mailchimp API requires <a href="http://admin.mailchimp.com/account/api">an API key</a>. Enter that key into this field.'),
-      '#default_value' => variable_get('re_mailchimpextras_api_key', ''),
+      '#default_value' => $api_key,
       '#required' => TRUE,
     );
     // List ID:
@@ -163,15 +164,41 @@ function re_mailchimpextras_admin_settings() {
       '#title' => t('List ID for the Mailchimp account collecting form data'),
       '#description' => t('Remote interaction with the Mailchimp API requires a list id. Enter the list id into this field.'),
       '#default_value' => variable_get('re_mailchimpextras_list_id', ''),
-      '#required' => TRUE,
+      '#required' => ($api_key != '') ? TRUE : FALSE,
     );
 
-    // If the API key is set, we'll show the available lists for that key:
+    // If the API key is set, we'll give the user the option of retrieving and
+    // storing the available lists for that key:
     if ($api_key != '') {
+      $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_account_request'] = array(
+        '#description' => t('Click to request a list of the available List Ids from Mailchimp'),
+        '#type' => 'submit',
+        '#value' => t('Retrieve available lists from Mailchimp'),
+        
+        '#submit' => array('re_mailchimpextras_lists'), // If javascript unavailable...
+        
+        '#ahah' => array(
+          'path' => RE_MCE_MAILCHIMP_LISTS_LOOKUP_PATH .'/'. $api_key,
+          'wrapper' => 're_mailchimpextras-lists-list',
+          'method' => 'replace',
+          'effect' => 'fade',
+        ),
+      );
+      
+      $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_lists_list'] = array(
+        '#prefix' => '<div id="re_mailchimpextras-lists-list">',
+        '#suffix' => '</div>',
+        '#type' => 'markup',
+        '#value' => 'markup',
+      );
+      
+      
+      /*
       $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_available_list_ids'] = array(
         '#title' => t('Available lists'),
         '#value' => re_mailchimpextras_lists($api_key),
       );
+      */
     }
 
   // Mailchimp account details:
@@ -186,7 +213,7 @@ function re_mailchimpextras_admin_settings() {
     if ($api_key != '') {
       $form['re_mailchimpextras_mailchimp_account']['re_mailchimpextras_account_details'] = array(
         '#title' => t('Account Details'),
-        '#value' => re_mailchimpextras_account_details($api_key),
+        '#value' => variable_get('re_mailchimpextras_account_details', re_mailchimpextras_account_details($api_key)),
       );
     }
 
@@ -434,7 +461,8 @@ function re_mailchimpextras_lists($api_key) {
     }
     $message = sprintf($message_pattern, $message_text, $list_items);
   }
-  return $message;
+  // JSON-ify the message:
+  drupal_json($message);
 } // re_mailchimpextras_lists()
 
 
@@ -452,6 +480,12 @@ function re_mailchimpextras_menu() {
    'access arguments' => array('administer mailchimp settings'),
    'description' => 'Global configuration RE Mailchimp Extras settings',
    'type' => MENU_NORMAL_ITEM,
+  );
+  $items[RE_MCE_MAILCHIMP_LISTS_LOOKUP_PATH] = array(
+    'page callback' => 're_mailchimpextras_lists',
+    'type' => MENU_CALLBACK,
+    'page arguments' => array(4),
+    'access arguments' => array('access administration pages'),
   );
   return $items;
 } // re_mailchimpextras_menu()
