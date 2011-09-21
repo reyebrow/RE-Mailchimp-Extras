@@ -84,8 +84,7 @@ function re_mailchimpextras_account_details($api_key) {
   // Maybe we didn't get anything back:
   if (empty($result) || !is_array($result)) {
     // Just go straight to preparing the output:
-    $message_pattern = '<p>%s</p>';
-    $message = sprintf($message_pattern, t('No account information was returned! Please ensure you are using the correct API key.'));
+    $message = theme('re_mailchimpextras_mailchimp_error', t('No account information was returned! Please ensure you are using the correct API key.'));
   }
   // But if we did:
   else {
@@ -133,11 +132,14 @@ function re_mailchimpextras_array_to_csv($array) {
 
 /**
  * Provides admin screen where preferences can be set.
+ *
+ * @todo Provide submit handler for AHAH list retrieval.
  */
 function re_mailchimpextras_admin_settings() {
   // Find out if the API key and List ID variables are set:
   $api_key = variable_get('re_mailchimpextras_api_key', '');
   $list_id = variable_get('re_mailchimpextras_list_id', '');
+  $lists_list = variable_get('re_mailchimpextras_lists_list', '');
 
   // Prepare to build the settings form:
   $form = array();
@@ -173,10 +175,8 @@ function re_mailchimpextras_admin_settings() {
       $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_account_request'] = array(
         '#description' => t('Click to request a list of the available List Ids from Mailchimp'),
         '#type' => 'submit',
-        '#value' => t('Retrieve available lists from Mailchimp'),
-        
-        '#submit' => array('re_mailchimpextras_lists'), // If javascript unavailable...
-        
+        '#value' => t('Retrieve or refresh available lists from Mailchimp'),
+        //'#submit' => array(''), // If javascript unavailable...
         '#ahah' => array(
           'path' => RE_MCE_MAILCHIMP_LISTS_LOOKUP_PATH .'/'. $api_key,
           'wrapper' => 're_mailchimpextras-lists-list',
@@ -189,16 +189,8 @@ function re_mailchimpextras_admin_settings() {
         '#prefix' => '<div id="re_mailchimpextras-lists-list">',
         '#suffix' => '</div>',
         '#type' => 'markup',
-        '#value' => 'markup',
+        '#value' => $lists_list != '' ? $lists_list : t('No lists found'),
       );
-      
-      
-      /*
-      $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_available_list_ids'] = array(
-        '#title' => t('Available lists'),
-        '#value' => re_mailchimpextras_lists($api_key),
-      );
-      */
     }
 
   // Mailchimp account details:
@@ -444,23 +436,15 @@ function re_mailchimpextras_lists($api_key) {
   $result = $api->lists();
   // Maybe we didn't get anything back:
   if (empty($result) || !is_array($result)) {
-    // Just go straight to preparing the output:
-    $message_pattern = '<p>%s</p>';
-    $message = sprintf($message_pattern, t('No lists were returned! Please ensure you are using the correct API key.'));
+    // Go straight to output:
+    $message = theme('re_mailchimpextras_mailchimp_error', t('No lists were returned! Please ensure you are using the correct API key.'));
   }
   // But if we did:
   else {
-    // Prepare patterns for output:
-    $message_pattern = '<p>%s</p><ul>%s</ul>';
-    $list_item_pattern = '<li>%s: <strong>%s</strong></li>';
-    // Prepare the output contents; first the message:
-    $message_text = format_plural($result['total'], 'Mailchimp reports <strong>@count</strong> list available for this API key:', 'Mailchimp reports <strong>@count</strong> lists available for this API key:', $args = array(), $langcode = NULL);
-    // Then the actual lists with their ids:
-    foreach ($result['data'] as $list_details) {
-      $list_items .= sprintf($list_item_pattern, $list_details['name'], $list_details['id']);
-    }
-    $message = sprintf($message_pattern, $message_text, $list_items);
+    $message = theme('re_mailchimpextras_mailchimp_lists_list', $result);
   }
+  // Store the result:
+  variable_set('re_mailchimpextras_lists_list', $message);
   // JSON-ify the message:
   drupal_json($message);
 } // re_mailchimpextras_lists()
@@ -492,6 +476,23 @@ function re_mailchimpextras_menu() {
 
 
 /**
+ * Implementation of hook_theme().
+ */
+function re_mailchimpextras_theme() {
+  $themes = array(
+    // Theming functions for this module:
+    're_mailchimpextras_mailchimp_error' => array(
+      'arguments' => array('message' => NULL),
+    ),
+    're_mailchimpextras_mailchimp_lists_list' => array(
+      'arguments' => array('message' => NULL),
+    ),
+  );
+  return $themes;
+} // re_mailchimpextras_theme()
+
+
+/**
  * Implementation of hook_submit().
  */
 function re_mailchimpextras_webform_submit($form, &$form_state) {
@@ -515,3 +516,40 @@ function re_mailchimpextras_webform_submit($form, &$form_state) {
     }
   }
 } // re_mailchimpextras_webform_submit()
+
+
+/**
+ * Theming function for errors received from Mailchimp.
+ *
+ * @param string $message
+ * @return string $output HTML for display.
+ * @see re_mailchimpextras_lists()
+ */
+function theme_re_mailchimpextras_mailchimp_error($message) {
+  $output_pattern = '<p>%s</p>';
+  $output = sprintf($message_pattern, $message);
+  return $output;
+} // theme_re_mailchimpextras_mailchimp_error()
+
+
+/**
+ * Theming function for output from re_mailchimpextras_lists() function.
+ *
+ * @param array $result Output from Mailchimp API lists() method.
+ * @return string $output HTML for display.
+ * @see re_mailchimpextras_lists()
+ */
+function theme_re_mailchimpextras_mailchimp_lists_list($result) {
+  // Prepare patterns for output:
+  $message_pattern = '<p>%s</p><ul>%s</ul>';
+  $list_item_pattern = '<li>%s: <strong>%s</strong></li>';
+  // Prepare the output contents; first the message:
+  $message_text = format_plural($result['total'], 'Mailchimp reports <strong>@count</strong> list available for this API key:', 'Mailchimp reports <strong>@count</strong> lists available for this API key:', $args = array(), $langcode = NULL);
+  // Then the actual lists with their ids:
+  foreach ($result['data'] as $list_details) {
+    $list_items .= sprintf($list_item_pattern, $list_details['name'], $list_details['id']);
+  }
+  $message = sprintf($message_pattern, $message_text, $list_items);
+  // Return the result:
+  return $message;
+} // theme_re_mailchimpextras_mailchimp_lists_list()
