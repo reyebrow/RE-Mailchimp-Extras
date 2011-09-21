@@ -140,6 +140,7 @@ function re_mailchimpextras_admin_settings() {
   $api_key = variable_get('re_mailchimpextras_api_key', '');
   $list_id = variable_get('re_mailchimpextras_list_id', '');
   $lists_list = variable_get('re_mailchimpextras_lists_list', '');
+  $account_details = variable_get('re_mailchimpextras_account_details', re_mailchimpextras_account_details($api_key));
 
   // Prepare to build the settings form:
   $form = array();
@@ -172,6 +173,7 @@ function re_mailchimpextras_admin_settings() {
     // If the API key is set, we'll give the user the option of retrieving and
     // storing the available lists for that key:
     if ($api_key != '') {
+      // We always show the button because users may need to change API keys etc:
       $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_account_request'] = array(
         '#description' => t('Click to request a list of the available List Ids from Mailchimp'),
         '#type' => 'submit',
@@ -184,29 +186,30 @@ function re_mailchimpextras_admin_settings() {
           'effect' => 'fade',
         ),
       );
-      
+      // But we always show what we got last time--we really do not want to hit
+      // up Mailchimp for this information all the time:
       $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_lists_list'] = array(
         '#prefix' => '<div id="re_mailchimpextras-lists-list">',
         '#suffix' => '</div>',
         '#type' => 'markup',
         '#value' => $lists_list != '' ? $lists_list : t('No lists found'),
       );
-    }
-
-  // Mailchimp account details:
-  $form['re_mailchimpextras_mailchimp_account'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Mailchimp account details'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE, // Expand the fieldset if there are still un-set required fields...
-  );
-
-    // If the API key is set, we'll show the available lists for that key:
-    if ($api_key != '') {
-      $form['re_mailchimpextras_mailchimp_account']['re_mailchimpextras_account_details'] = array(
-        '#title' => t('Account Details'),
-        '#value' => variable_get('re_mailchimpextras_account_details', re_mailchimpextras_account_details($api_key)),
-      );
+      
+      // We only show account details if there are account details:
+      if ($account_details != '') {
+        // Mailchimp account details:
+        $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_mailchimp_account'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Mailchimp account details'),
+          '#collapsible' => TRUE,
+          '#collapsed' => TRUE, // Expand the fieldset if there are still un-set required fields...
+        );
+        
+        $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_mailchimp_account']['re_mailchimpextras_account_details'] = array(
+          '#title' => t('Account Details'),
+          '#value' => $account_details,
+        );
+      }
     }
 
   // Mailchimp messages:
