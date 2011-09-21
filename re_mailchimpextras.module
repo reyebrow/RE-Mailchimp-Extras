@@ -39,7 +39,7 @@ define('RE_MCE_MAILCHIMP_LISTS_LOOKUP_PATH', 'admin/settings/re_mce/lists');
  * @todo Make sure first and last name ARE always available, and think about how
  *       to handle it if they're not.
  */
-function _re_mailchimpextras_mailchimp_log($api, $operation, $first_name, $last_name, $email_address) {
+function re_mailchimpextras_mailchimp_log($api, $operation, $first_name, $last_name, $email_address) {
   switch ($operation) {
     case 'listSubscribe':
       // Decide what to do according to whether or not we've gotten an error message:
@@ -62,7 +62,7 @@ function _re_mailchimpextras_mailchimp_log($api, $operation, $first_name, $last_
   if ($dsm_message != '') {
     drupal_set_message($dsm_message, $dsm_status, FALSE);
   }
-} // re_mailchimpextras_listSubscribe_log()
+} // re_mailchimpextras_mailchimp_log()
 
 
 /**
@@ -123,7 +123,8 @@ function re_mailchimpextras_array_to_csv($array) {
  * @todo Provide submit handler for AHAH list retrieval.
  */
 function re_mailchimpextras_admin_settings() {
-  // Find out if the API key and List ID variables are set:
+  // Find out if the API key and List ID variables are set, along with some other
+  // bits and pieces we need more than once:
   $api_key = variable_get('re_mailchimpextras_api_key', '');
   $list_id = variable_get('re_mailchimpextras_list_id', '');
   $lists_list = variable_get('re_mailchimpextras_lists_list', '');
@@ -140,64 +141,64 @@ function re_mailchimpextras_admin_settings() {
     '#collapsed' => ($api_key == '' || $list_id == '') ? FALSE : TRUE, // Expand the fieldset if there are still un-set required fields...
   );
 
-    // API key:
-    $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_api_key'] = array(
-      '#type' => 'textfield',
-      '#title' => t('API key for the Mailchimp account collecting form data'),
-      '#description' => t('Remote interaction with the Mailchimp API requires <a href="http://admin.mailchimp.com/account/api">an API key</a>. Enter that key into this field.'),
-      '#default_value' => $api_key,
-      '#required' => TRUE,
-    );
-    // List ID:
-    $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_list_id'] = array(
-      '#type' => 'textfield',
-      '#title' => t('List ID for the Mailchimp account collecting form data'),
-      '#description' => t('Remote interaction with the Mailchimp API requires a list id. Enter the list id into this field.'),
-      '#default_value' => variable_get('re_mailchimpextras_list_id', ''),
-      '#required' => ($api_key != '') ? TRUE : FALSE,
-    );
+  // API key:
+  $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_api_key'] = array(
+    '#type' => 'textfield',
+    '#title' => t('API key for the Mailchimp account collecting form data'),
+    '#description' => t('Remote interaction with the Mailchimp API requires <a href="http://admin.mailchimp.com/account/api">an API key</a>. Enter that key into this field.'),
+    '#default_value' => $api_key,
+    '#required' => TRUE,
+  );
+  // List ID:
+  $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_list_id'] = array(
+    '#type' => 'textfield',
+    '#title' => t('List ID for the Mailchimp account collecting form data'),
+    '#description' => t('Remote interaction with the Mailchimp API requires a list id. Enter the list id into this field.'),
+    '#default_value' => variable_get('re_mailchimpextras_list_id', ''),
+    '#required' => ($api_key != '') ? TRUE : FALSE,
+  );
 
-    // If the API key is set, we'll give the user the option of retrieving and
-    // storing the available lists for that key:
-    if ($api_key != '') {
-      // We always show the button because users may need to change API keys etc:
-      $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_account_request'] = array(
-        '#description' => t('Click to request a list of the available List Ids from Mailchimp'),
-        '#type' => 'submit',
-        '#value' => t('Retrieve or refresh available lists from Mailchimp'),
-        //'#submit' => array(''), // If javascript unavailable...
-        '#ahah' => array(
-          'path' => RE_MCE_MAILCHIMP_LISTS_LOOKUP_PATH .'/'. $api_key,
-          'wrapper' => 're_mailchimpextras-lists-list',
-          'method' => 'replace',
-          'effect' => 'fade',
-        ),
-      );
-      // But we always show what we got last time--we really do not want to hit
-      // up Mailchimp for this information all the time:
-      $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_lists_list'] = array(
-        '#prefix' => '<div id="re_mailchimpextras-lists-list">',
-        '#suffix' => '</div>',
-        '#type' => 'markup',
-        '#value' => $lists_list != '' ? $lists_list : t('No lists found'),
+  // If the API key is set, we'll give the user the option of retrieving and
+  // storing the available lists for that key:
+  if ($api_key != '') {
+    // We always show the button because users may need to change API keys etc:
+    $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_account_request'] = array(
+      '#description' => t('Click to request a list of the available List Ids from Mailchimp'),
+      '#type' => 'submit',
+      '#value' => t('Retrieve or refresh available lists from Mailchimp'),
+      //'#submit' => array(''), // If javascript unavailable...
+      '#ahah' => array(
+        'path' => RE_MCE_MAILCHIMP_LISTS_LOOKUP_PATH .'/'. $api_key,
+        'wrapper' => 're_mailchimpextras-lists-list',
+        'method' => 'replace',
+        'effect' => 'fade',
+      ),
+    );
+    // But we always show what we got last time--we really do not want to hit
+    // up Mailchimp for this information all the time:
+    $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_lists_list'] = array(
+      '#prefix' => '<div id="re_mailchimpextras-lists-list">',
+      '#suffix' => '</div>',
+      '#type' => 'markup',
+      '#value' => $lists_list != '' ? $lists_list : t('No lists found'),
+    );
+      
+    // We only show account details if there are account details:
+    if ($account_details != '') {
+      // Mailchimp account details:
+      $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_mailchimp_account'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Mailchimp account details'),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE, // Expand the fieldset if there are still un-set required fields...
       );
       
-      // We only show account details if there are account details:
-      if ($account_details != '') {
-        // Mailchimp account details:
-        $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_mailchimp_account'] = array(
-          '#type' => 'fieldset',
-          '#title' => t('Mailchimp account details'),
-          '#collapsible' => TRUE,
-          '#collapsed' => TRUE, // Expand the fieldset if there are still un-set required fields...
-        );
-        
-        $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_mailchimp_account']['re_mailchimpextras_account_details'] = array(
-          '#title' => t('Account Details'),
-          '#value' => $account_details,
-        );
-      }
+      $form['re_mailchimpextras_mailchimp_settings']['re_mailchimpextras_mailchimp_account']['re_mailchimpextras_account_details'] = array(
+        '#title' => t('Account Details'),
+        '#value' => $account_details,
+      );
     }
+  }
 
   // Mailchimp messages:
   $form['re_mailchimpextras_error_messages'] = array(
@@ -207,38 +208,38 @@ function re_mailchimpextras_admin_settings() {
     '#collapsed' => TRUE,
   );
 
-    // DSM error message:
-    $form['re_mailchimpextras_error_messages']['re_mailchimpextras_dsm_error'] = array(
-      '#title' => t('"Drupal Set Message" error message'),
-      '#description' => t('This is the message shown to the <em>user</em> if his or her submission is not correctly received by Mailchimp. It should be fairly non-technical, reassuring, and should probably include a link to a manual sign-up form.'),
-      '#type' => 'textarea',
-      '#default_value' => variable_get('re_mailchimpextras_dsm_error', RE_MCE_MAILCHIMP_DSM_ERROR_MESSAGE),
-      '#rows' => 1,
-    );
-    // DSM success message:
-    $form['re_mailchimpextras_error_messages']['re_mailchimpextras_dsm_success'] = array(
-      '#title' => t('"Drupal Set Message" success message'),
-      '#description' => t('This is the message shown to the <em>user</em> if his or her submission is correctly received by Mailchimp. It should be fairly non-technical and should provide the user with instructions about how to confirm his or her subscription to the list.'),
-      '#type' => 'textarea',
-      '#default_value' => variable_get('re_mailchimpextras_dsm_success', RE_MCE_MAILCHIMP_DSM_SUCCESS_MESSAGE),
-      '#rows' => 1,
-    );
-    // Watchdog error message:
-    $form['re_mailchimpextras_error_messages']['re_mailchimpextras_watchdog_error'] = array(
-      '#title' => t('"Watchdog" error message'),
-      '#description' => t('This is the message recorded in the <a href="'. base_path() .'admin/reports/dblog">database log</a> if a submission is not correctly received by Mailchimp. If the tokens <code>@error_code</code>, <code>@error_message</code>, <code>@email</code>, <code>@first_name</code> and <code>@last_name</code> are included, the module will attempt to include those values in the log entry.'),
-      '#type' => 'textarea',
-      '#default_value' => variable_get('re_mailchimpextras_watchdog_error', RE_MCE_MAILCHIMP_WATCHDOG_ERROR_MESSAGE),
-      '#rows' => 1,
-    );
-    // Watchdog success message:
-    $form['re_mailchimpextras_error_messages']['re_mailchimpextras_watchdog_success'] = array(
-      '#title' => t('"Watchdog" error message'),
-      '#description' => t('This is the message recorded in the <a href="'. base_path() .'admin/reports/dblog">database log</a> if a submission is not correctly received by Mailchimp. If the tokens <code>@email</code>, <code>@first_name</code> and <code>@last_name</code> are included, the module will attempt to include those values in the log entry.'),
-      '#type' => 'textarea',
-      '#default_value' => variable_get('re_mailchimpextras_watchdog_success', RE_MCE_MAILCHIMP_WATCHDOG_SUCCESS_MESSAGE),
-      '#rows' => 1,
-    );
+  // DSM error message:
+  $form['re_mailchimpextras_error_messages']['re_mailchimpextras_dsm_error'] = array(
+    '#title' => t('"Drupal Set Message" error message'),
+    '#description' => t('This is the message shown to the <em>user</em> if his or her submission is not correctly received by Mailchimp. It should be fairly non-technical, reassuring, and should probably include a link to a manual sign-up form.'),
+    '#type' => 'textarea',
+    '#default_value' => variable_get('re_mailchimpextras_dsm_error', RE_MCE_MAILCHIMP_DSM_ERROR_MESSAGE),
+    '#rows' => 1,
+  );
+  // DSM success message:
+  $form['re_mailchimpextras_error_messages']['re_mailchimpextras_dsm_success'] = array(
+    '#title' => t('"Drupal Set Message" success message'),
+    '#description' => t('This is the message shown to the <em>user</em> if his or her submission is correctly received by Mailchimp. It should be fairly non-technical and should provide the user with instructions about how to confirm his or her subscription to the list.'),
+    '#type' => 'textarea',
+    '#default_value' => variable_get('re_mailchimpextras_dsm_success', RE_MCE_MAILCHIMP_DSM_SUCCESS_MESSAGE),
+    '#rows' => 1,
+  );
+  // Watchdog error message:
+  $form['re_mailchimpextras_error_messages']['re_mailchimpextras_watchdog_error'] = array(
+    '#title' => t('"Watchdog" error message'),
+    '#description' => t('This is the message recorded in the <a href="'. base_path() .'admin/reports/dblog">database log</a> if a submission is not correctly received by Mailchimp. If the tokens <code>@error_code</code>, <code>@error_message</code>, <code>@email</code>, <code>@first_name</code> and <code>@last_name</code> are included, the module will attempt to include those values in the log entry.'),
+    '#type' => 'textarea',
+    '#default_value' => variable_get('re_mailchimpextras_watchdog_error', RE_MCE_MAILCHIMP_WATCHDOG_ERROR_MESSAGE),
+    '#rows' => 1,
+  );
+  // Watchdog success message:
+  $form['re_mailchimpextras_error_messages']['re_mailchimpextras_watchdog_success'] = array(
+    '#title' => t('"Watchdog" error message'),
+    '#description' => t('This is the message recorded in the <a href="'. base_path() .'admin/reports/dblog">database log</a> if a submission is not correctly received by Mailchimp. If the tokens <code>@email</code>, <code>@first_name</code> and <code>@last_name</code> are included, the module will attempt to include those values in the log entry.'),
+    '#type' => 'textarea',
+    '#default_value' => variable_get('re_mailchimpextras_watchdog_success', RE_MCE_MAILCHIMP_WATCHDOG_SUCCESS_MESSAGE),
+    '#rows' => 1,
+  );
 
   // Webform settings:
   $form['re_mailchimpextras_webform_settings'] = array(
@@ -249,41 +250,42 @@ function re_mailchimpextras_admin_settings() {
     '#description' => t('<p>Currently, this module only supports sending first name, last name, email address and subscription confirmation data from webform submissions to Mailchimp. The module expects the corresponding fields to have the same machine namef, regardless of which webform is used. In other words, <em>it\'s necessary to use the same machine names for first name, last name, email address and subscription confirmation in every webform whose data is to be sent to Mailchimp</em>.</p><p>You can use this form to change the values the module expects to suit the fieldnames in any already-existing webforms on this site.</p>'),
   );
 
-    // First name field:
-    $form['re_mailchimpextras_webform_settings']['re_mailchimpextras_webform_first_name'] = array(
-      '#type' => 'textfield',
-      '#title' => t('First name field name'),
-      '#default_value' => variable_get('re_mailchimpextras_webform_first_name', RE_MCE_FNAME),
-      '#required' => TRUE,
-    );
-    // Last name field:
-    $form['re_mailchimpextras_webform_settings']['re_mailchimpextras_webform_last_name'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Last name field name'),
-      '#default_value' => variable_get('re_mailchimpextras_webform_last_name', RE_MCE_LNAME),
-      '#required' => TRUE,
-    );
-    // Email field:
-    $form['re_mailchimpextras_webform_settings']['re_mailchimpextras_webform_email'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Email address field name'),
-      '#default_value' => variable_get('re_mailchimpextras_webform_email', RE_MCE_EMAIL),
-      '#required' => TRUE,
-    );
-    // Subscribe field:
-    $form['re_mailchimpextras_webform_settings']['re_mailchimpextras_webform_subscribe'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Subscribe field name'),
-      '#default_value' => variable_get('re_mailchimpextras_webform_subscribe', RE_MCE_SUBSCRIBE),
-      '#required' => TRUE,
-    );
-    // Don't use default Webform submitter setting:
-    $form['re_mailchimpextras_webform_settings']['re_mailchimpextras_webform_default_function'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Use module\'s default Webform function'),
-      '#description' => t('This module provides a default function for submitting Webform data to Mailchimp (see re_mailchimpextras_form_alter()). If you are not using this module for webforms, or if you would like to provide your own implementation by calling the re_mailchimpextras_listSubscribe() function directly from your own module (you might need to do this if you need to send more data to Mailchimp than the defaults listed here), this default function should be disabled.'),
-      '#default_value' =>  variable_get('re_mailchimpextras_webform_default_function', TRUE),
-    );
+  // First name field:
+  $form['re_mailchimpextras_webform_settings']['re_mailchimpextras_webform_first_name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('First name field name'),
+    '#default_value' => variable_get('re_mailchimpextras_webform_first_name', RE_MCE_FNAME),
+    '#required' => TRUE,
+  );
+  // Last name field:
+  $form['re_mailchimpextras_webform_settings']['re_mailchimpextras_webform_last_name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Last name field name'),
+    '#default_value' => variable_get('re_mailchimpextras_webform_last_name', RE_MCE_LNAME),
+    '#required' => TRUE,
+  );
+  // Email field:
+  $form['re_mailchimpextras_webform_settings']['re_mailchimpextras_webform_email'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Email address field name'),
+    '#default_value' => variable_get('re_mailchimpextras_webform_email', RE_MCE_EMAIL),
+    '#required' => TRUE,
+  );
+  // Subscribe field:
+  $form['re_mailchimpextras_webform_settings']['re_mailchimpextras_webform_subscribe'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Subscribe field name'),
+    '#default_value' => variable_get('re_mailchimpextras_webform_subscribe', RE_MCE_SUBSCRIBE),
+    '#required' => TRUE,
+  );
+  // Don't use default Webform submitter setting:
+  $form['re_mailchimpextras_webform_settings']['re_mailchimpextras_webform_default_function'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use module\'s default Webform function'),
+    '#description' => t('This module provides a default function for submitting Webform data to Mailchimp (see re_mailchimpextras_form_alter()). If you are not using this module for webforms, or if you would like to provide your own implementation by calling the re_mailchimpextras_listSubscribe() function directly from your own module (you might need to do this if you need to send more data to Mailchimp than the defaults listed here), this default function should be disabled.'),
+    '#default_value' =>  variable_get('re_mailchimpextras_webform_default_function', TRUE),
+  );
+  
   return system_settings_form($form);
 } // re_mailchimpextras_admin_settings()
 
@@ -398,7 +400,7 @@ function re_mailchimpextras_listSubscribe($api_key, $list_id, $email_address, $m
   // Make the request:
   $retval = $api->listSubscribe($list_id, $email_address, $merge_vars);
   // Log the result:
-  _re_mailchimpextras_mailchimp_log($api, 'listSubscribe', $merge_vars['FNAME'], $merge_vars['LNAME'], $email_address);
+  re_mailchimpextras_mailchimp_log($api, 'listSubscribe', $merge_vars['FNAME'], $merge_vars['LNAME'], $email_address);
   // Return the result in case the caller is interested:
   return $retval;
 } // _re_mailchimpextras_mailchimp_subscribe()
