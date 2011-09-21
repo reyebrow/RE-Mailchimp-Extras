@@ -88,21 +88,8 @@ function re_mailchimpextras_account_details($api_key) {
   }
   // But if we did:
   else {
-    // Create a list
-    $list_item_pattern = '%s: <strong>%s</strong>';
-    // Get the account details
-    foreach($result['contact'] as $key => $value) {
-      $items[] = sprintf($list_item_pattern, t($key), $value); 
-    }
-    $contact_details = theme('item_list', $items);
-    // Get all other details
-    $list_items = array(
-      sprintf($list_item_pattern, t('User ID'), $result['user_id']),
-      sprintf($list_item_pattern, t('Username'), $result['username']),
-      sprintf($list_item_pattern, t('Plan type'), $result['plan_type']),
-      t('Contact Details') . $contact_details,
-    );
-    $message = theme('item_list', $list_items);
+    // Use a different theme function:    
+    $message = theme('re_mailchimpextras_mailchimp_account_details', $result);   
   }
   return $message;
 } // re_mailchimpextras_account_details()
@@ -348,7 +335,7 @@ function re_mailchimpextras_form_alter(&$form, &$form_state, $form_id) {
 
 
 /**
- * This function is an API function.
+ * This function is an wrapper for a Mailchimp API function.
  * It will return the value of a field from the getAccountDetails API call.
  *
  *
@@ -484,11 +471,14 @@ function re_mailchimpextras_menu() {
 function re_mailchimpextras_theme() {
   $themes = array(
     // Theming functions for this module:
+    're_mailchimpextras_mailchimp_account_details' => array(
+      'arguments' => array('result' => NULL),
+    ),
     're_mailchimpextras_mailchimp_error' => array(
       'arguments' => array('message' => NULL),
     ),
     're_mailchimpextras_mailchimp_lists_list' => array(
-      'arguments' => array('message' => NULL),
+      'arguments' => array('result' => NULL),
     ),
   );
   return $themes;
@@ -519,6 +509,33 @@ function re_mailchimpextras_webform_submit($form, &$form_state) {
     }
   }
 } // re_mailchimpextras_webform_submit()
+
+
+/**
+ * Theming function for output from re_mailchimpextras_lists() function.
+ *
+ * @param array $result Output from Mailchimp API lists() method.
+ * @return string $output HTML for display.
+ * @see re_mailchimpextras_account_details()
+ */
+function theme_re_mailchimpextras_mailchimp_account_details($result) {
+  // Create a list
+  $list_item_pattern = '%s: <strong>%s</strong>';
+  // Get the account details
+  foreach($result['contact'] as $key => $value) {
+    $items[] = sprintf($list_item_pattern, t($key), $value); 
+  }
+  $contact_details = theme('item_list', $items);
+  // Get all other details
+  $list_items = array(
+    sprintf($list_item_pattern, t('User ID'), $result['user_id']),
+    sprintf($list_item_pattern, t('Username'), $result['username']),
+    sprintf($list_item_pattern, t('Plan type'), $result['plan_type']),
+    t('Contact Details') . $contact_details,
+  );
+  $output = theme('item_list', $list_items);
+  return $output;
+} // theme_re_mailchimpextras_mailchimp_account_details()
 
 
 /**
