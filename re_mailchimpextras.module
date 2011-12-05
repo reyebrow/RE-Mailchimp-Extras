@@ -58,7 +58,7 @@ function re_mailchimpextras_mailchimp_log($api, $operation, $first_name, $last_n
       break;
   }
   // Do the logging and display the message:
-  watchdog('RE Mailchimp Extras', array('@first_name' => $first_name, '@last_name' => $last_name, '@email' => $email_address), $watchdog_status);
+  watchdog('RE Mailchimp Extras', $watchdog_message, array('@first_name' => $first_name, '@last_name' => $last_name, '@email' => $email_address), $watchdog_status);
   if ($dsm_message != '') {
     drupal_set_message($dsm_message, $dsm_status, FALSE);
   }
