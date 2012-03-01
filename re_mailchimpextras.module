@@ -48,17 +48,20 @@ function re_mailchimpextras_mailchimp_log($api, $operation, $first_name, $last_n
         $watchdog_status = WATCHDOG_ERROR;
         $dsm_message = variable_get('re_mailchimpextras_dsm_error', RE_MCE_MAILCHIMP_DSM_ERROR_MESSAGE);
         $dsm_status = 'error';
+        // Do the logging:
+        watchdog('RE Mailchimp Extras', $watchdog_message, array('@error_code' => $api->errorCode, '@error_message' => $api->errorMessage, '@last_name' => $last_name, '@email' => $email_address), $watchdog_status);
       }
       else {
         $watchdog_message = variable_get('re_mailchimpextras_watchdog_success', RE_MCE_MAILCHIMP_WATCHDOG_SUCCESS_MESSAGE);
         $watchdog_status = WATCHDOG_NOTICE;
         $dsm_message = variable_get('re_mailchimpextras_dsm_success', RE_MCE_MAILCHIMP_DSM_SUCCESS_MESSAGE);
         $dsm_status = 'status';
+        // Do the logging:
+        watchdog('RE Mailchimp Extras', $watchdog_message, array('@first_name' => $first_name, '@last_name' => $last_name, '@email' => $email_address), $watchdog_status);
       }
       break;
   }
-  // Do the logging and display the message:
-  watchdog('RE Mailchimp Extras', $watchdog_message, array('@first_name' => $first_name, '@last_name' => $last_name, '@email' => $email_address), $watchdog_status);
+  // Display the message:
   if ($dsm_message != '') {
     drupal_set_message($dsm_message, $dsm_status, FALSE);
   }
@@ -402,8 +405,11 @@ function re_mailchimpextras_listSubscribe($api_key, $list_id, $email_address, $m
   $api = new MCAPI($api_key);
   // Make the request:
   $retval = $api->listSubscribe($list_id, $email_address, $merge_vars);
+  // Make sure we pass useful information to the log:
+  $first_name = isset($merge_vars['FNAME']) ? $merge_vars['FNAME'] : $merge_vars['MERGE1'];
+  $last_name = isset($merge_vars['LNAME']) ? $merge_vars['LNAME'] : $merge_vars['MERGE2'];
   // Log the result:
-  re_mailchimpextras_mailchimp_log($api, 'listSubscribe', $merge_vars['FNAME'], $merge_vars['LNAME'], $email_address);
+  re_mailchimpextras_mailchimp_log($api, 'listSubscribe', $first_name, $last_name, $email_address);
   // Return the result in case the caller is interested:
   return $retval;
 } // _re_mailchimpextras_mailchimp_subscribe()
